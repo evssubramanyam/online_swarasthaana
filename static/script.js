@@ -409,6 +409,7 @@ audioPlayer.ontimeupdate = () => {
  */
 async function getNgrokUrl() {
     const githubUrl = "https://raw.githubusercontent.com/evssubramanyam/online_swarasthaana/main/ngrok_url.txt";
+    console.log(githubUrl);
     try {
         const response = await fetch(githubUrl, {
             cache: 'no-store'
@@ -423,6 +424,7 @@ async function getNgrokUrl() {
     } catch (error) {
         console.error("Error fetching Ngrok URL:", error);
         alert("Error: Could not retrieve the Ngrok URL.  Please check your network connection and the GitHub URL. Make sure the file exists and is accessible.");
+        console.log(githubUrl);
         throw error;
     }
 }
