@@ -6,7 +6,7 @@ const tooltip = document.getElementById("tooltip");
 const playAllBtn = document.getElementById("playAll");
 const pauseBtn = document.getElementById("pause");
 const playRangeBtn = document.getElementById("playRange");
-const baseSwaraSelector = document.getElementById("baseSwaraSelector"); // Get the selector
+const baseSwaraSelector = document.getElementById("baseSwaraSelector");
 
 let mediaRecorder;
 let recordedChunks = [];
@@ -24,12 +24,12 @@ const loadAudioFileElement = document.getElementById("loadAudioFile");
 const loadSubtitlesButton = document.getElementById("loadSubtitles");
 const loadSubtitleFileElement = document.getElementById("loadSubtitleFile");
 
-let subtitleFileContent = null; // Store the content of the subtitle file
-let subtitleNotes = []; // Store the notes from the subtitle file.
-let subtitles = []; // Array to store subtitle objects with time information
-let subtitleDivs = []; // Array to store the subtitle div elements
-let highlightedIndex = -1; // Keep track of the currently highlighted subtitle
-const subtitleHeight = 25; // Approximate height of each subtitle line.  Make this configurable if needed.
+let subtitleFileContent = null;
+let subtitleNotes = [];
+let subtitles = [];
+let subtitleDivs = [];
+let highlightedIndex = -1;
+const subtitleHeight = 25;
 let activeIndex = 0;
 
 console.log('script.js loaded');
@@ -63,7 +63,7 @@ function getSwaraOffset() {
         "Ni1": 10,
         "Ni2": 11
     };
-    return offsetRef[base] || 0; // Return 0 if base is not found (e.g., "Rest")
+    return offsetRef[base] || 0;
 }
 
 /**
@@ -72,7 +72,7 @@ function getSwaraOffset() {
  * @returns {string} The offset swara name, or the original if no offset is needed.
  */
 function offsetSwara(originalSwara) {
-    if (originalSwara === "Rest") return originalSwara; // Handle "Rest" case
+    if (originalSwara === "Rest") return originalSwara;
     const index = fullSwaraList.indexOf(originalSwara);
     if (index === -1) return originalSwara;
     const offset = getSwaraOffset();
@@ -87,7 +87,7 @@ function offsetSwara(originalSwara) {
  */
 function setCookie(name, value) {
     const date = new Date();
-    date.setTime(date.getTime() + (10 * 60 * 1000)); // 10 minutes
+    date.setTime(date.getTime() + (10 * 60 * 1000));
     const expires = "; expires=" + date.toUTCString();
     document.cookie = name + "=" + (value || "") + expires + "; path=/;";
     console.log(`[COOKIE] Set cookie ${name} = ${value}`);
@@ -117,7 +117,6 @@ function getCookie(name) {
 baseSwaraSelector.addEventListener("change", function () {
     console.log("baseSwaraSelector changed!");
     renderSubtitles();
-    // Log the offset and the array
     const offset = getSwaraOffset();
     console.log("Offset:", offset);
     console.log("Original Notes:", subtitleNotes);
@@ -130,7 +129,7 @@ baseSwaraSelector.addEventListener("change", function () {
 
 });
 
-// Event listener for the download CSV button to initiate the download process.
+// Event listener for the download CSV button.
 if (!downloadCSVBtn) {
     console.error('downloadCSV button not found in DOM');
 } else {
@@ -138,231 +137,224 @@ if (!downloadCSVBtn) {
 
     downloadCSVBtn.addEventListener('click', () => {
         console.log('downloadCSV clicked');
-        // Use cookie instead of dataset
         const audioUid = getCookie('audioUid');
         if (!audioUid) {
             alert('No audio has been processed yet. Please upload and record audio first.');
             return;
         }
 
-        // Construct the URL for the download CSV endpoint.
-        const downloadCsvEndpoint = `https://afa0-2406-b400-b4-b9eb-9d98-fe4-e796-43ca.ngrok-free.app/download_csv/${audioUid}`;  // Replace with your Ngrok URL
-        console.log(`[DOWNLOAD CSV] Fetching from: ${downloadCsvEndpoint}`);
-
-        // Use window.location.href for direct download
-        window.location.href = downloadCsvEndpoint;
-
-        // No need for the rest of the fetch code, the browser will handle the download
-
+        // Use the dynamically fetched Ngrok URL here:
+        getNgrokUrl().then(ngrokUrl => {
+            const downloadCsvEndpoint = `${ngrokUrl}/download_csv/${audioUid}`;
+            console.log(`[DOWNLOAD CSV] Fetching from: ${downloadCsvEndpoint}`);
+            window.location.href = downloadCsvEndpoint;
+        }).catch(error => {
+            console.error("Failed to fetch Ngrok URL:", error);
+            alert("Failed to download CSV.  Please check your network connection and Ngrok status.");
+        });
     });
 }
 
-// Event listener for the "Load Audio" button to trigger file selection.
+// Event listener for the "Load Audio" button.
 loadAudioButton.addEventListener("click", () => {
-    loadAudioFileElement.click();
+        loadAudioFileElement.click();
 });
 
-// Event listener for the audio file input to handle file selection and loading.
+// Event listener for the audio file input.
 loadAudioFileElement.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+        const file = e.target.files[0];
+        if (!file) return;
 
-    const audioURL = URL.createObjectURL(file);
-    audioPlayer.src = audioURL;
-    audioPlayer.load();
+        const audioURL = URL.createObjectURL(file);
+        audioPlayer.src = audioURL;
+        audioPlayer.load();
 
-    audioPlayer.oncanplaythrough = () => {
-        duration = audioPlayer.duration;
-        recordingLengthDisplay.textContent = `Recording Length: ${duration.toFixed(2)} seconds`;
-    };
+        audioPlayer.oncanplaythrough = () => {
+                duration = audioPlayer.duration;
+                recordingLengthDisplay.textContent = `Recording Length: ${duration.toFixed(2)} seconds`;
+        };
 });
 
-// Event listener for the "Load Subtitles" button to trigger file selection.
+// Event listener for the "Load Subtitles" button.
 loadSubtitlesButton.addEventListener("click", () => {
-    loadSubtitleFileElement.click();
+        loadSubtitleFileElement.click();
 });
 
 /**
  * Parses the CSV subtitle data into an array of subtitle objects.
  * @param {string} csvText - The CSV text to parse.
- * @returns {Array<{time: number, end: number, text: string}>} An array of subtitle objects.
+ * @returns {Array<{time: number, end: number, text: string}>}
  */
 function parseCSVSubtitles(csvText) {
-    const lines = csvText.trim().split('\n');
-    const subtitles = [];
-    const headers = lines[0].split(',').map(h => h.trim()); // Get headers
+        const lines = csvText.trim().split('\n');
+        const subtitles = [];
+        const headers = lines[0].split(',').map(h => h.trim());
 
-    if (headers.length < 3 || headers[0] !== 'start' || headers[1] !== 'end' || headers[2] !== 'note') {
-        throw new Error('Invalid CSV format. Expected headers: start, end, note');
-    }
+        if (headers.length < 3 || headers[0] !== 'start' || headers[1] !== 'end' || headers[2] !== 'note') {
+                throw new Error('Invalid CSV format. Expected headers: start, end, note');
+        }
 
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        if (values.length === 3) {
-            const start = parseFloat(values[0]);
-            const end = parseFloat(values[1]);
-            const text = values[2];
-            if (!isNaN(start) && !isNaN(end)) {
-                subtitles.push({ time: start, end: end, text: text });
-            } else {
-                console.warn(`Skipping invalid subtitle entry at line ${i + 1}: ${lines[i]}`);
-            }
+        for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length === 3) {
+                        const start = parseFloat(values[0]);
+                        const end = parseFloat(values[1]);
+                        const text = values[2];
+                        if (!isNaN(start) && !isNaN(end)) {
+                                subtitles.push({ time: start, end: end, text: text });
+                        } else {
+                                console.warn(`Skipping invalid subtitle entry at line ${i + 1}: ${lines[i]}`);
+                        }
+                } else {
+                        console.warn(`Skipping invalid subtitle entry at line ${i + 1}: ${lines[i]}`);
+                }
         }
-        else {
-            console.warn(`Skipping invalid subtitle entry at line ${i + 1}: ${lines[i]}`);
-        }
-    }
-    return subtitles;
+        return subtitles;
 }
 
-
-
-// Event listener for the subtitle file input to handle file selection and loading.
+// Event listener for the subtitle file input.
 loadSubtitleFileElement.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+        const file = e.target.files[0];
+        if (!file) return;
 
-    try {
-        const text = await file.text();
-        subtitleFileContent = text; // Store the file content
-        console.log("Subtitle file content:", text);
-        const parsedSubtitles = parseCSVSubtitles(text); // Parse
-        subtitles = parsedSubtitles; // Store parsed subtitles
-        subtitleNotes = parsedSubtitles.map(sub => sub.text); // Extract notes
-        renderSubtitles(); // Initial render
-        updateHighlight(0);
-        baseSwaraSelector.value = "Sa"; // Reset selector
-    } catch (error) {
-        console.error("Error loading or parsing subtitle file:", error);
-        alert("Error loading subtitle file.  Please ensure it is a valid CSV file.");
-    }
+        try {
+                const text = await file.text();
+                subtitleFileContent = text;
+                console.log("Subtitle file content:", text);
+                const parsedSubtitles = parseCSVSubtitles(text);
+                subtitles = parsedSubtitles;
+                subtitleNotes = parsedSubtitles.map(sub => sub.text);
+                renderSubtitles();
+                updateHighlight(0);
+                baseSwaraSelector.value = "Sa";
+        } catch (error) {
+                console.error("Error loading or parsing subtitle file:", error);
+                alert("Error loading subtitle file.  Please ensure it is a valid CSV file.");
+        }
 });
 
-// Event listener for the "Start Recording" button to begin audio recording.
+// Event listener for the "Start Recording" button.
 startRecordingBtn.onclick = async () => {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        recordedChunks = [];
+        try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                recordedChunks = [];
 
-        mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) recordedChunks.push(e.data);
-        };
+                mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) recordedChunks.push(e.data);
+                };
 
-        mediaRecorder.onstop = async () => {
-            const blob = new Blob(recordedChunks, { type: "audio/webm" });
-            const file = new File([blob], "recorded_audio.webm", { type: "audio/webm" });
+                mediaRecorder.onstop = async () => {
+                        const blob = new Blob(recordedChunks, { type: "audio/webm" });
+                        const file = new File([blob], "recorded_audio.webm", { type: "audio/webm" });
 
-            clearInterval(recordingTimerInterval);
-            const recordedDuration = (Date.now() - recordingStartTime) / 1000;
-            duration = recordedDuration;
-            recordingLengthDisplay.textContent = `Recording Length: ${recordedDuration.toFixed(2)} seconds`;
-            recordingIndicator.classList.add("hidden");
+                        clearInterval(recordingTimerInterval);
+                        const recordedDuration = (Date.now() - recordingStartTime) / 1000;
+                        duration = recordedDuration;
+                        recordingLengthDisplay.textContent = `Recording Length: ${recordedDuration.toFixed(2)} seconds`;
+                        recordingIndicator.classList.add("hidden");
 
-            const formData = new FormData();
-            formData.append("audio", file);
-            // Generate audio_uid here
-            const audioUid = crypto.randomUUID();
-            formData.append("audio_uid", audioUid); // Send it with the upload
+                        const formData = new FormData();
+                        formData.append("audio", file);
+                        const audioUid = crypto.randomUUID();
+                        formData.append("audio_uid", audioUid);
 
-            audioPlayer.dataset.audioUid = audioUid; // Store it for later use - not needed with cookie
-            setCookie('audioUid', audioUid); // Store in a cookie
-            audioPlayer.src = URL.createObjectURL(file); //set src so duration can be read
-            audioPlayer.load();
+                        audioPlayer.dataset.audioUid = audioUid;
+                        setCookie('audioUid', audioUid);
+                        audioPlayer.src = URL.createObjectURL(file);
+                        audioPlayer.load();
 
-            try {
-                //  Use your server's address here
-                const response = await fetch("https://afa0-2406-b400-b4-b9eb-9d98-fe4-e796-43ca.ngrok-free.app/upload", {  // Replace with your Ngrok URL
-                    method: "POST",
-                    body: formData,
-                });
+                        try {
+                                // Fetch Ngrok URL from GitHub
+                                const ngrokUrl = await getNgrokUrl();
+                                const response = await fetch(`${ngrokUrl}/upload`, {
+                                        method: "POST",
+                                        body: formData,
+                                });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                alert(data.message); // Alert message
-                triggerDownload(audioUid);
+                                if (!response.ok) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                const data = await response.json();
+                                alert(data.message);
+                                triggerDownload(audioUid);
 
-            } catch (err) {
-                alert("Upload failed: " + err.message);
-                console.error(err);
-            }
+                        } catch (err) {
+                                alert("Upload failed: " + err.message);
+                                console.error(err);
+                        }
 
-            // Prompt the user to save the audio file.
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'recording.webm'; // Suggest a filename
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        };
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'recording.webm';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        URL.revokeObjectURL(blob);
+                };
 
-        mediaRecorder.start();
-        startRecordingBtn.textContent = "Recording...";
-        startRecordingBtn.disabled = true;
-        stopRecordingBtn.disabled = false;
+                mediaRecorder.start();
+                startRecordingBtn.textContent = "Recording...";
+                startRecordingBtn.disabled = true;
+                stopRecordingBtn.disabled = false;
 
-        recordingStartTime = Date.now();
-        recordingTimerInterval = setInterval(() => {
-            const elapsedTime = (Date.now() - recordingStartTime) / 1000;
-            recordingLengthDisplay.textContent = `Recording Length: ${elapsedTime.toFixed(2)} seconds`;
-        }, 100);
+                recordingStartTime = Date.now();
+                recordingTimerInterval = setInterval(() => {
+                        const elapsedTime = (Date.now() - recordingStartTime) / 1000;
+                        recordingLengthDisplay.textContent = `Recording Length: ${elapsedTime.toFixed(2)} seconds`;
+                }, 100);
 
-        recordingIndicator.classList.remove("hidden");
-    } catch (err) {
-        alert("Recording failed. Check microphone permissions.");
-        console.error("Error starting recording:", err);
-    }
+                recordingIndicator.classList.remove("hidden");
+        } catch (err) {
+                alert("Recording failed. Check microphone permissions.");
+                console.error("Error starting recording:", err);
+        }
 };
 
-// Event listener for the "Stop Recording" button to stop audio recording.
+// Event listener for the "Stop Recording" button.
 stopRecordingBtn.onclick = () => {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-        startRecordingBtn.textContent = "Start Recording";
-        startRecordingBtn.disabled = false;
-        stopRecordingBtn.disabled = true;
-    }
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                startRecordingBtn.textContent = "Start Recording";
+                startRecordingBtn.disabled = false;
+                stopRecordingBtn.disabled = true;
+        }
 };
-
-
 
 /**
  * Renders the subtitles into the subtitles container.
  */
 function renderSubtitles() {
-    subtitlesContainer.innerHTML = '';
-    subtitleDivs = []; // Clear the array
-    subtitles.forEach((sub, i) => { // Use the subtitles array
-        const div = document.createElement("div");
-        const displaySwara = offsetSwara(sub.text); // Offset based on original
-        div.textContent = displaySwara;
-        div.className = "subtitle-line";
-        div.dataset.index = i;
-        div.dataset.originalText = sub.text; // Store original text
-        div.dataset.startTime = sub.time;  // Store start time
-        div.dataset.endTime = sub.end;    // Store end time
-        subtitleDivs.push(div); // Store the div
-        subtitlesContainer.appendChild(div);
-        div.addEventListener("mouseenter", () => {
-            tooltip.textContent = `Start: ${sub.time.toFixed(2)}s, End: ${sub.end.toFixed(2)}s`;
-            tooltip.style.display = 'block';
+        subtitlesContainer.innerHTML = '';
+        subtitleDivs = [];
+        subtitles.forEach((sub, i) => {
+                const div = document.createElement("div");
+                const displaySwara = offsetSwara(sub.text);
+                div.textContent = displaySwara;
+                div.className = "subtitle-line";
+                div.dataset.index = i;
+                div.dataset.originalText = sub.text;
+                div.dataset.startTime = sub.time;
+                div.dataset.endTime = sub.end;
+                subtitleDivs.push(div);
+                subtitlesContainer.appendChild(div);
+                div.addEventListener("mouseenter", () => {
+                        tooltip.textContent = `Start: ${sub.time.toFixed(2)}s, End: ${sub.end.toFixed(2)}s`;
+                        tooltip.style.display = 'block';
+                });
+                div.addEventListener("mousemove", e => {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY + 10}px`;
+                });
+                div.addEventListener("mouseleave", () => {
+                        tooltip.style.display = 'none';
+                });
         });
-        div.addEventListener("mousemove", e => {
-            tooltip.style.left = `${e.pageX + 10}px`;
-            tooltip.style.top = `${e.pageY + 10}px`;
-        });
-        div.addEventListener("mouseleave", () => {
-            tooltip.style.display = 'none';
-        });
-    });
-    //set the height of the subtitles container.
-    subtitlesContainer.style.height = '100px';
-    subtitlesContainer.style.overflow = 'hidden';
-    subtitlesContainer.style.position = 'relative';
+        subtitlesContainer.style.height = '100px';
+        subtitlesContainer.style.overflow = 'hidden';
+        subtitlesContainer.style.position = 'relative';
 }
 
 /**
@@ -370,116 +362,142 @@ function renderSubtitles() {
  * @param {number} currentTime - The current audio playback time.
  */
 function updateHighlight(currentTime) {
-    let newIndex = -1;
+        let newIndex = -1;
 
-    // Find the index of the subtitle that should be highlighted
-    for (let i = 0; i < subtitles.length; i++) {
-        if (currentTime >= subtitles[i].time && currentTime < subtitles[i].end) {
-            newIndex = i;
-            break; // Exit the loop once the correct subtitle is found
+        for (let i = 0; i < subtitles.length; i++) {
+                if (currentTime >= subtitles[i].time && currentTime < subtitles[i].end) {
+                        newIndex = i;
+                        break;
+                }
         }
-    }
 
-    // If a new subtitle needs to be highlighted
-    if (newIndex !== -1 && newIndex !== activeIndex) {
-        activeIndex = newIndex; // Update the active index
-        const allLines = subtitlesContainer.querySelectorAll(".subtitle-line");
-        allLines.forEach((line, i) => {
-            line.classList.toggle("highlight", i === newIndex);
-        });
-        // Calculate and set the scroll position to center the highlighted subtitle
-        const containerHeight = subtitlesContainer.clientHeight;
-        const highlightedElement = allLines[newIndex];  // Use newIndex
-        const elementTop = highlightedElement.offsetTop;
-        const elementHeight = highlightedElement.offsetHeight;
+        if (newIndex !== -1 && newIndex !== activeIndex) {
+                activeIndex = newIndex;
+                const allLines = subtitlesContainer.querySelectorAll(".subtitle-line");
+                allLines.forEach((line, i) => {
+                        line.classList.toggle("highlight", i === newIndex);
+                });
+                const containerHeight = subtitlesContainer.clientHeight;
+                const highlightedElement = allLines[newIndex];
+                const elementTop = highlightedElement.offsetTop;
+                const elementHeight = highlightedElement.offsetHeight;
 
-        const scrollOffset = elementTop - (containerHeight / 2) + (elementHeight / 2);
-        subtitlesContainer.scrollTo({
-            top: scrollOffset,
-            behavior: 'smooth' // Add smooth scrolling if desired
+                const scrollOffset = elementTop - (containerHeight / 2) + (elementHeight / 2);
+                subtitlesContainer.scrollTo({
+                        top: scrollOffset,
+                        behavior: 'smooth'
+                });
+        }
+}
+
+// Event listener for the audio player's timeupdate event.
+audioPlayer.ontimeupdate = () => {
+        const currentTime = audioPlayer.currentTime;
+        const endTime = Math.min(parseFloat(endInput.value), duration);
+
+        if (currentTime >= endTime) {
+                audioPlayer.pause();
+                return;
+        }
+
+        updateHighlight(currentTime);
+};
+
+/**
+ * Fetches the Ngrok URL from GitHub.
+ * @returns {Promise<string>} The Ngrok URL.
+ */
+async function getNgrokUrl() {
+    const githubUrl = "https://raw.githubusercontent.com/your-username/your-repo/main/ngrok_url.txt"; // Replace with your GitHub URL
+    try {
+        const response = await fetch(githubUrl, {
+            cache: 'no-store'
         });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch Ngrok URL from GitHub: ${response.status}`);
+        }
+        const text = await response.text();
+        const fetchedNgrokUrl = text.trim();
+        console.log(`[FETCHED NGROK URL] ${fetchedNgrokUrl} (via GitHub)`);
+        return fetchedNgrokUrl;
+    } catch (error) {
+        console.error("Error fetching Ngrok URL:", error);
+        alert("Error: Could not retrieve the Ngrok URL.  Please check your network connection and the GitHub URL. Make sure the file exists and is accessible.");
+        throw error;
     }
 }
 
-// Event listener for the audio player's timeupdate event to handle subtitle highlighting.
-audioPlayer.ontimeupdate = () => {
-    const currentTime = audioPlayer.currentTime;
-    const endTime = Math.min(parseFloat(endInput.value), duration);
-
-    if (currentTime >= endTime) {
-        audioPlayer.pause();
-        return;
-    }
-
-    updateHighlight(currentTime);
-};
-
 // Event listener for file input change
 document.getElementById("audioFile").addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const formData = new FormData();
-        formData.append("audio", file);
-        const audioUid = crypto.randomUUID();  // Generate audio_uid here
-        formData.append("audio_uid", audioUid); // Send it with the upload
-        audioPlayer.dataset.audioUid = audioUid; // Store it, though not needed with cookie.
-        setCookie('audioUid', audioUid); //set the cookie
-        audioPlayer.src = URL.createObjectURL(file); //set src so duration can be read.
-        audioPlayer.load();
+        const file = e.target.files[0];
+        if (file) {
+                const formData = new FormData();
+                formData.append("audio", file);
+                const audioUid = crypto.randomUUID();
+                formData.append("audio_uid", audioUid);
+                audioPlayer.dataset.audioUid = audioUid;
+                setCookie('audioUid', audioUid);
+                audioPlayer.src = URL.createObjectURL(file);
+                audioPlayer.load();
 
-        try {
-            // Use your server address
-            const response = await fetch("https://afa0-2406-b400-b4-b9eb-9d98-fe4-e796-43ca.ngrok-free.app/upload", {  // Replace with your Ngrok URL
-                method: "POST",
-                body: formData,
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            alert(data.message); // Alert message
-            triggerDownload(audioUid);
+                try {
+                        //  Fetch the Ngrok URL here.
+                        const ngrokUrl = await getNgrokUrl();
+                        const response = await fetch(`${ngrokUrl}/upload`, {
+                                method: "POST",
+                                body: formData,
+                        });
+                        if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const data = await response.json();
+                        alert(data.message);
+                        triggerDownload(audioUid);
 
-        } catch (err) {
-            alert("File upload failed: " + err.message);
-            console.error(err);
+                } catch (err) {
+                        alert("File upload failed: " + err.message);
+                        console.error(err);
+                }
         }
-    }
 });
 
 /**
  * Triggers the download of the CSV file using the audioUid.
  */
 function triggerDownload(audioUid) {
-    const downloadCsvEndpoint = `https://afa0-2406-b400-b4-b9eb-9d98-fe4-e796-43ca.ngrok-free.app/download_csv/${audioUid}`; //  Use your Ngrok URL
-    console.log(`[TRIGGER DOWNLOAD] Fetching from: ${downloadCsvEndpoint}`);
-
-    window.location.href = downloadCsvEndpoint; // Use href for download
+        getNgrokUrl().then(ngrokUrl => {
+                const downloadCsvEndpoint = `${ngrokUrl}/download_csv/${audioUid}`;
+                console.log(`[TRIGGER DOWNLOAD] Fetching from: ${downloadCsvEndpoint}`);
+                window.location.href = downloadCsvEndpoint;
+        }).catch(error => {
+                console.error("Failed to get Ngrok URL for download:", error);
+                alert("Download failed. Please check your network connection and Ngrok status.");
+        });
 }
 
 
-// Event listener for the "Play All" button to start audio playback from the beginning.
+// Event listener for the "Play All" button.
 playAllBtn.addEventListener('click', () => {
-    audioPlayer.currentTime = 0;
-    audioPlayer.play();
+        audioPlayer.currentTime = 0;
+        audioPlayer.play();
 });
 
-// Event listener for the "Pause" button to pause audio playback.
+// Event listener for the "Pause" button.
 pauseBtn.addEventListener('click', () => {
-    audioPlayer.pause();
+        audioPlayer.pause();
 });
 
-// Event listener for the "Play Range" button to play audio within a specified range.
+// Event listener for the "Play Range" button.
 playRangeBtn.addEventListener('click', () => {
-    let start = parseFloat(startInput.value);
-    let end = parseFloat(endInput.value);
+        let start = parseFloat(startInput.value);
+        let end = parseFloat(endInput.value);
 
-    if (isNaN(start) || start < 0) start = 0;
-    if (isNaN(end) || end > duration) end = duration;
+        if (isNaN(start) || start < 0) start = 0;
+        if (isNaN(end) || end > duration) end = duration;
 
-    startInput.value = start.toFixed(2);
-    endInput.value = end.toFixed(2);
+        startInput.value = start.toFixed(2);
+        endInput.value = end.toFixed(2);
 
-    audioPlayer.currentTime = start;
-    audioPlayer.play();
+        audioPlayer.currentTime = start;
+        audioPlayer.play();
 });
