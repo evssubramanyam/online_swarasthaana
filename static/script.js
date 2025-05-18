@@ -408,7 +408,7 @@ audioPlayer.ontimeupdate = () => {
  * @returns {Promise<string>} The Ngrok URL.
  */
 async function getNgrokUrl() {
-    const githubUrl = "https://raw.githubusercontent.com/evssubramanyam/online_swarasthaana/main/ngrok_url.txt"; // Replace with your GitHub URL
+    const githubUrl = "https://raw.githubusercontent.com/evssubramanyam/online_swarasthaana/main/ngrok_url.txt";
     try {
         const response = await fetch(githubUrl, {
             cache: 'no-store'
