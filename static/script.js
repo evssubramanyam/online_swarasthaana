@@ -387,8 +387,17 @@ function updateHighlight(currentTime) {
         allLines.forEach((line, i) => {
             line.classList.toggle("highlight", i === newIndex);
         });
-        const offset = newIndex * subtitleHeight;
-        subtitlesContainer.style.transform = `translateY(-${offset}px)`;
+        // Calculate and set the scroll position to center the highlighted subtitle
+        const containerHeight = subtitlesContainer.clientHeight;
+        const highlightedElement = allLines[newIndex];  // Use newIndex
+        const elementTop = highlightedElement.offsetTop;
+        const elementHeight = highlightedElement.offsetHeight;
+
+        const scrollOffset = elementTop - (containerHeight / 2) + (elementHeight / 2);
+        subtitlesContainer.scrollTo({
+            top: scrollOffset,
+            behavior: 'smooth' // Add smooth scrolling if desired
+        });
     }
 }
 
